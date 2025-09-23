@@ -70,7 +70,6 @@ app.use(mongoSanitize({
   }
 }));
 
-const __dirname = path.resolve(); // Set {__dirname} to current working directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --------------------
