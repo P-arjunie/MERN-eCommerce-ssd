@@ -19,6 +19,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true
     },
+    provider: {
+      type: String,
+      default: 'local'
+    },
+    providerId: {
+      type: String,
+      default: null,
+      index: true
+    },
     // Indicates whether the user is an admin or not
     isAdmin: {
       type: Boolean,

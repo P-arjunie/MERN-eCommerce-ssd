@@ -1,8 +1,10 @@
 import express from 'express';import { body, check } from 'express-validator';
 import multer from 'multer';
 import validateRequest from '../middleware/validator.js';
+import csrf from 'csurf';
 
 const router = express.Router();
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
