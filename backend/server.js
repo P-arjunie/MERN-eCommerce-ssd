@@ -28,6 +28,21 @@ connectDB();
 
 const app = express();
 
+//FIX: Added this line to disable X-Powered-By header
+app.disable('x-powered-by');
+
+//FIX: Added this - Content Security Policy (CSP) Header Configuration
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' https://checkout.razorpay.com 'unsafe-inline'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://api.razorpay.com;"
+  );
+  next();
+});
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -41,7 +56,6 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false // For development
 }));
-
 
 // Rate limiting middleware
 const limiter = rateLimit({
@@ -70,7 +84,6 @@ const loginLimiter = rateLimit({
 // Apply rate limiting
 app.use('/api/', limiter);
 app.use('/api/v1/users/login', loginLimiter);
-
 
 app.use(cors());
 

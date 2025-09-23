@@ -45,6 +45,10 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+      <!-- FIX : SRI HASH: Cryptographic verification of script integrity -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js" 
+    integrity="sha384-XrdYIFXNRjEm9tJwjqEadjGViXdN6ydK0ZFa+xh6skabs1se3/ymtZ4LjWU/ELON" 
+    crossorigin="anonymous">
+  </script>
   </body>
 </html>
