@@ -28,6 +28,28 @@ connectDB();
 
 const app = express();
 
+// Restrictive CORS: only for API routes and only allowed origins
+const allowedOrigins = [
+  process.env.CLIENT_URL || process.env.FRONTEND_ORIGIN || 'http://localhost:3000'
+]
+  .concat((process.env.EXTRA_CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean))
+  .filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    // No Origin header (e.g., curl/server-to-server) → do not add CORS headers
+    if (!origin) return callback(null, false);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+// Apply CORS only to API routes
+app.use('/api', cors(corsOptions));
+app.options('/api/*', cors(corsOptions));
 //FIX: Added this line to disable X-Powered-By header
 app.disable('x-powered-by');
 
