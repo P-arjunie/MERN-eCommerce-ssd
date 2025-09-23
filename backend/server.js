@@ -6,6 +6,8 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import csrf from 'csurf';
 import mongoSanitize from 'express-mongo-sanitize';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 dotenv.config({ path: './.env' });
 
@@ -48,6 +50,64 @@ const corsOptions = {
 // Apply CORS only to API routes
 app.use('/api', cors(corsOptions));
 app.options('/api/*', cors(corsOptions));
+//FIX: Added this line to disable X-Powered-By header
+app.disable('x-powered-by');
+
+//FIX: Added this - Content Security Policy (CSP) Header Configuration
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' https://checkout.razorpay.com 'unsafe-inline'; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https://api.razorpay.com;"
+  );
+  next();
+});
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false // For development
+}));
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.'
+});
+
+/*const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 login requests per windowMs
+  message: 'Too many login attempts, please try again later.'
+});
+*/
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests
+  handler: (req, res, next) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many login attempts, please try again later.'
+    });
+  },
+});
+// Apply rate limiting
+app.use('/api/', limiter);
+app.use('/api/v1/users/login', loginLimiter);
+
+app.use(cors());
 
 app.use(compression());
 app.use(cookieParser());
