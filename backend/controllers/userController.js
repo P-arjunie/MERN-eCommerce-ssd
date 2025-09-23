@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { generateToken } from '../utils/generateToken.js';
 import transporter from '../config/email.js';
+import validator from 'validator';
 // @desc     Auth user & get token
 // @method   POST
 // @endpoint /api/users/login
@@ -10,8 +11,22 @@ import transporter from '../config/email.js';
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    
+    // 🔒 SECURE: Validate inputs to prevent injection attacks
+    if (!email || !validator.isEmail(email)) {
+      res.statusCode = 400;
+      throw new Error('Please provide a valid email address');
+    }
+    
+    if (!password || password.length < 1) {
+      res.statusCode = 400;
+      throw new Error('Please provide a password');
+    }
+    
+    // 🔒 SECURE: Sanitize email input
+    const sanitizedEmail = validator.normalizeEmail(email);
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: sanitizedEmail });
 
     if (!user) {
       res.statusCode = 404;
@@ -50,8 +65,28 @@ const loginUser = async (req, res, next) => {
 const registerUser = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
+    
+    // 🔒 SECURE: Validate inputs to prevent injection attacks
+    if (!name || name.trim().length < 2) {
+      res.statusCode = 400;
+      throw new Error('Name must be at least 2 characters');
+    }
+    
+    if (!validator.isEmail(email)) {
+      res.statusCode = 400;
+      throw new Error('Invalid email format');
+    }
+    
+    if (!password || password.length < 6) {
+      res.statusCode = 400;
+      throw new Error('Password must be at least 6 characters');
+    }
+    
+    // 🔒 SECURE: Sanitize inputs to prevent XSS and injection attacks
+    const sanitizedName = validator.escape(name.trim());
+    const sanitizedEmail = validator.normalizeEmail(email);
 
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: sanitizedEmail });
 
     if (userExists) {
       res.statusCode = 409;
@@ -61,8 +96,8 @@ const registerUser = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
-      name,
-      email,
+      name: sanitizedName,
+      email: sanitizedEmail,
       password: hashedPassword
     });
 
