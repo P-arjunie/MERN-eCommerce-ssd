@@ -1,6 +1,39 @@
 import Product from '../models/productModel.js';
 import { deleteFile } from '../utils/file.js';
 
+// Helper function to escape regex special characters and prevent NoSQL injection
+const escapeRegex = (text) => {
+  if (!text || typeof text !== 'string') return '';
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+};
+
+// Helper function to sanitize search input
+const sanitizeSearchInput = (search) => {
+  // Reject array inputs completely (common NoSQL injection vector)
+  if (Array.isArray(search)) {
+    throw new Error('Invalid search parameter format');
+  }
+  
+  // Reject object inputs (another NoSQL injection vector)
+  if (search && typeof search === 'object') {
+    throw new Error('Invalid search parameter format');
+  }
+  
+  // Handle non-string inputs
+  if (!search || typeof search !== 'string') {
+    return '';
+  }
+  
+  // Remove any potential NoSQL injection attempts
+  const cleaned = search.replace(/[\$\{\}\[\]]/g, '');
+  
+  // Escape regex special characters
+  const escaped = escapeRegex(cleaned);
+  
+  // Limit length to prevent DoS
+  return escaped.substring(0, 100);
+};
+
 // @desc     Fetch All Products
 // @method   GET
 // @endpoint /api/v1/products?limit=2&skip=0
@@ -12,11 +45,23 @@ const getProducts = async (req, res, next) => {
     const maxSkip = total === 0 ? 0 : total - 1;
     const limit = Number(req.query.limit) || maxLimit;
     const skip = Number(req.query.skip) || 0;
-    const search = req.query.search || '';
+    
+    // 🔒 SECURE: Sanitize search input to prevent NoSQL injection
+    let search = '';
+    try {
+      const rawSearch = req.query.search || '';
+      search = sanitizeSearchInput(rawSearch);
+    } catch (validationError) {
+      res.status(400);
+      throw new Error('Invalid search parameter: ' + validationError.message);
+    }
 
-    const products = await Product.find({
+    // 🔒 SECURE: Use sanitized search in query
+    const searchQuery = search ? {
       name: { $regex: search, $options: 'i' }
-    })
+    } : {};
+
+    const products = await Product.find(searchQuery)
       .limit(limit > maxLimit ? maxLimit : limit)
       .skip(skip > maxSkip ? maxSkip : skip < 0 ? 0 : skip);
 
