@@ -14,10 +14,13 @@ import {
   resetPassword
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import csrf from 'csurf';
 import validateRequest from '../middleware/validator.js';
 import {body, param} from 'express-validator';
 
+
 const router = express.Router();
+
 const validator = {
   checkLogin: [
     body('email').trim().notEmpty().withMessage('Email is Required').bail().isEmail().withMessage("Please enter a valid email address"),
@@ -49,16 +52,19 @@ const validator = {
   ]
 }
 
+// CSRF: protect state-changing routes (POST/PUT/DELETE). GETs remain unprotected.
 router.route('/')
   .post(validator.checkNewUser, validateRequest, registerUser)
   .get(protect, admin, getUsers);
 
 router.route('/admins').get(protect, admin, admins);
 
+// CSRF token required for password flows and auth endpoints
 router.post('/reset-password/request', validator.resetPasswordRequest, validateRequest, resetPasswordRequest);
 router.post('/reset-password/reset/:id/:token', validator.resetPassword, validateRequest, resetPassword);
 router.post('/login', validator.checkLogin, validateRequest, loginUser);
-router.post('/logout', protect, logoutUser);
+// Logout is idempotent; we avoid CSRF/protect so it always clears cookie safely
+router.post('/logout', logoutUser);
 
 router
   .route('/profile')

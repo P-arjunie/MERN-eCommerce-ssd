@@ -9,15 +9,23 @@ import Message from '../components/Message';
 import Meta from '../components/Meta';
 import ProfileForm from '../components/ProfileForm';
 import { addCurrency } from '../utils/addCurrency';
+import { useSelector } from 'react-redux';
 
 const ProfilePage = () => {
   const { data: orders, isLoading, error } = useGetMyOrdersQuery();
+  const { userInfo } = useSelector(state => state.auth);
   return (
     <>
       <Row>
         <Col md={3}>
           <Meta title={'User Profile'} />
           <h2>My Profile</h2>
+          {userInfo && (
+            <div className='mb-3 p-2 border rounded bg-light'>
+              <div><strong>Name:</strong> {userInfo.name}</div>
+              <div><strong>Email:</strong> {userInfo.email}</div>
+            </div>
+          )}
           <ProfileForm />
         </Col>
         <Col md={9}>
