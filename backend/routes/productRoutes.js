@@ -9,10 +9,12 @@ import {
   getTopProducts
 } from '../controllers/productController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import csrf from 'csurf';
 import validateRequest from '../middleware/validator.js';
 import {body, check, param} from 'express-validator';
 
 const router = express.Router();
+
 
 const validator = {
   getProducts: [
