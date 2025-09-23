@@ -6,6 +6,8 @@ import compression from 'compression';
 import dotenv from 'dotenv';
 import csrf from 'csurf';
 import mongoSanitize from 'express-mongo-sanitize';
+import rateLimit from 'express-rate-limit';
+import helmet from 'helmet';
 
 dotenv.config({ path: './.env' });
 
@@ -25,6 +27,50 @@ const port = process.env.PORT || 5000;
 connectDB();
 
 const app = express();
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https:", "data:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false // For development
+}));
+
+
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests, please try again later.'
+});
+
+/*const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 login requests per windowMs
+  message: 'Too many login attempts, please try again later.'
+});
+*/
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests
+  handler: (req, res, next) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many login attempts, please try again later.'
+    });
+  },
+});
+// Apply rate limiting
+app.use('/api/', limiter);
+app.use('/api/v1/users/login', loginLimiter);
+
 
 app.use(cors());
 
