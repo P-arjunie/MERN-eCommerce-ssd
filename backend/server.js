@@ -5,6 +5,7 @@ import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import csrf from 'csurf';
+import mongoSanitize from 'express-mongo-sanitize';
 
 dotenv.config({ path: './.env' });
 
@@ -38,6 +39,38 @@ app.use(express.urlencoded({ extended: true }));
 // Static files
 // --------------------
 const __dirname = path.resolve();
+// 🔒 SECURE: Custom middleware to block array-based NoSQL injection
+app.use((req, res, next) => {
+  // Check for array parameters in query string which could be NoSQL injection attempts
+  for (const [key, value] of Object.entries(req.query)) {
+    if (Array.isArray(value)) {
+      console.warn(`🚨 Array-based NoSQL injection attempt blocked: ${key}[] in ${req.method} ${req.path} from IP: ${req.ip}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid query parameter format detected'
+      });
+    }
+    // Also check for objects that might be injection attempts
+    if (typeof value === 'object' && value !== null) {
+      console.warn(`🚨 Object-based NoSQL injection attempt blocked: ${key} in ${req.method} ${req.path} from IP: ${req.ip}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid query parameter format detected'
+      });
+    }
+  }
+  next();
+});
+
+// 🔒 SECURE: Add NoSQL injection protection middleware
+app.use(mongoSanitize({
+  replaceWith: '_', // Replace prohibited characters with underscore
+  onSanitize: ({ req, key }) => {
+    console.warn(`🚨 NoSQL injection attempt detected: ${key} in ${req.method} ${req.path} from IP: ${req.ip}`);
+  }
+}));
+
+const __dirname = path.resolve(); // Set {__dirname} to current working directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --------------------
