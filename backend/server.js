@@ -28,36 +28,42 @@ connectDB();
 
 const app = express();
 
-// Restrictive CORS: only for API routes and only allowed origins
+// Restrictive CORS: only for API routes and allowed origins
 const allowedOrigins = [
-  process.env.CLIENT_URL || process.env.FRONTEND_ORIGIN || 'http://localhost:3000'
+  process.env.CLIENT_URL || process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
+  'https://accounts.google.com', // allow Google OAuth redirects
+  'https://oauth2.googleapis.com' // optional: for token exchanges
 ]
   .concat((process.env.EXTRA_CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean))
   .filter(Boolean);
 
-  const corsOptions = {
-    origin(origin, callback) {
-      // Allow server-to-server (no origin header)
-      if (!origin) return callback(null, true);
-  
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true); // allowed
-      }
-  
-      // actively block
-      return callback(new Error("CORS: Origin not allowed"), false);
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-  };
-  
+const corsOptions = {
+  origin(origin, callback) {
+    // No Origin header (server-to-server requests) → allow
+    if (!origin) return callback(null, true);
+
+    // Allowed origins → allow
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    // Not allowed → block gracefully
+    console.warn('Blocked CORS origin:', origin);
+    return callback(null, false); // don't throw error
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
 
 // Apply CORS only to API routes
 app.use('/api', cors(corsOptions));
 app.options('/api/*', cors(corsOptions));
-//FIX: Added this line to disable X-Powered-By header
+
+// Optional: skip strict CORS for OIDC callback to avoid blocking redirects
+app.use('/api/v1/auth/oidc/callback', (req, res, next) => next());
+
+// Disable X-Powered-By header
 app.disable('x-powered-by');
+
 
 //FIX: Added this - Content Security Policy (CSP) Header Configuration
 app.use((req, res, next) => {
