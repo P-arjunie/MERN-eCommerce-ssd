@@ -10,6 +10,7 @@ import Meta from '../components/Meta';
 import ProfileForm from '../components/ProfileForm';
 import { addCurrency } from '../utils/addCurrency';
 import { useSelector } from 'react-redux';
+import SafeHTML from '../components/SafeHTML';
 
 const ProfilePage = () => {
   const { data: orders, isLoading, error } = useGetMyOrdersQuery();
@@ -22,8 +23,8 @@ const ProfilePage = () => {
           <h2>My Profile</h2>
           {userInfo && (
             <div className='mb-3 p-2 border rounded bg-light'>
-              <div><strong>Name:</strong> {userInfo.name}</div>
-              <div><strong>Email:</strong> {userInfo.email}</div>
+              <div><strong>Name:</strong> <SafeHTML content={userInfo.name} /></div>
+              <div><strong>Email:</strong> <SafeHTML content={userInfo.email} /></div>
             </div>
           )}
           <ProfileForm />

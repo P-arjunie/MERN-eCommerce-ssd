@@ -1,12 +1,18 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import DOMPurify from 'dompurify';
 
 const Meta = ({ title, description, keywords }) => {
+  // Sanitize all inputs to prevent XSS attacks
+  const safeTitle = DOMPurify.sanitize(title || '', { ALLOWED_TAGS: [] });
+  const safeDescription = DOMPurify.sanitize(description || '', { ALLOWED_TAGS: [] });
+  const safeKeywords = DOMPurify.sanitize(keywords || '', { ALLOWED_TAGS: [] });
+  
   return (
     <Helmet>
-      <title>{title}</title>
-      <meta name='description' content={description} />
-      <meta name='keywords' content={keywords} />
+      <title>{safeTitle}</title>
+      <meta name='description' content={safeDescription} />
+      <meta name='keywords' content={safeKeywords} />
     </Helmet>
   );
 };

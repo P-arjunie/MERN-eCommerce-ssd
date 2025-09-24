@@ -3,6 +3,7 @@ import Message from './Message';
 import { Link } from 'react-router-dom';
 import { Button, Form, ListGroup } from 'react-bootstrap';
 import Rating from './Rating';
+import SafeHTML from './SafeHTML';
 
 const Reviews = ({
   product,
@@ -24,7 +25,7 @@ const Reviews = ({
             <strong>{review.name}</strong>
             <Rating value={review.rating} />
             <p>{new Date(review.createdAt).toDateString()}</p>
-            <p>{review.comment}</p>
+            <SafeHTML content={review.comment} tag="p" />
           </ListGroup.Item>
         ))}
         <ListGroup.Item>

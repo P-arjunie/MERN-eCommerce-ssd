@@ -35,17 +35,23 @@ const allowedOrigins = [
   .concat((process.env.EXTRA_CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean))
   .filter(Boolean);
 
-const corsOptions = {
-  origin(origin, callback) {
-    // No Origin header (e.g., curl/server-to-server) → do not add CORS headers
-    if (!origin) return callback(null, false);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(null, false);
-  },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
+  const corsOptions = {
+    origin(origin, callback) {
+      // Allow server-to-server (no origin header)
+      if (!origin) return callback(null, true);
+  
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true); // allowed
+      }
+  
+      // actively block
+      return callback(new Error("CORS: Origin not allowed"), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  };
+  
 
 // Apply CORS only to API routes
 app.use('/api', cors(corsOptions));

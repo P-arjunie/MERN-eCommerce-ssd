@@ -24,6 +24,7 @@ import Message from '../components/Message';
 import Meta from '../components/Meta';
 import { addCurrency } from '../utils/addCurrency';
 import Reviews from '../components/Reviews';
+import SafeHTML from '../components/SafeHTML';
 
 const ProductPage = () => {
   const { id: productId } = useParams();
@@ -117,7 +118,7 @@ const addToCartHandler = () => {
                 </ListGroup.Item>
                 <ListGroup.Item>
                   <strong> About this item:</strong>
-                  {product.description}
+                  <SafeHTML content={product.description} />
                 </ListGroup.Item>
               </ListGroup>
             </Col>
