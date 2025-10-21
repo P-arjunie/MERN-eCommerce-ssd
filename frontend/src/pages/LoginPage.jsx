@@ -16,6 +16,10 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  
+  // Frontend validation states
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -38,8 +42,71 @@ const LoginPage = () => {
     setShowPassword(!showPassword);
   };
 
+  // Frontend validation functions
+  const validateField = (fieldName, value) => {
+    const newErrors = { ...errors };
+    
+    switch (fieldName) {
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!value) {
+          newErrors.email = 'Email is required';
+        } else if (!emailRegex.test(value)) {
+          newErrors.email = 'Please enter a valid email address';
+        } else {
+          delete newErrors.email;
+        }
+        break;
+      case 'password':
+        if (!value) {
+          newErrors.password = 'Password is required';
+        } else if (value.length < 6) {
+          newErrors.password = 'Password must be at least 6 characters';
+        } else {
+          delete newErrors.password;
+        }
+        break;
+      default:
+        break;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (fieldName, value) => {
+    setTouched({ ...touched, [fieldName]: true });
+    validateField(fieldName, value);
+  };
+
+  const handleChange = (fieldName, value, setter) => {
+    setter(value);
+    if (touched[fieldName]) {
+      validateField(fieldName, value);
+    }
+  };
+
+  const validateForm = () => {
+    const isEmailValid = validateField('email', email);
+    const isPasswordValid = validateField('password', password);
+    
+    setTouched({
+      email: true,
+      password: true
+    });
+    
+    return isEmailValid && isPasswordValid;
+  };
+
   const submitHandler = async e => {
     e.preventDefault();
+    
+    // Frontend validation
+    if (!validateForm()) {
+      toast.error('Please fix the validation errors');
+      return;
+    }
+    
     try {
       const res = await login({ email, password, remember }).unwrap();
       dispatch(setCredentials({ ...res }));
@@ -55,22 +122,34 @@ const LoginPage = () => {
       <h1>Sign In</h1>
       <Form onSubmit={submitHandler}>
         <Form.Group className='mb-3' controlId='email'>
-          <Form.Label>Email address</Form.Label>
+          <Form.Label>Email address *</Form.Label>
           <Form.Control
             type='email'
             value={email}
             placeholder='Enter email'
-            onChange={e => setEmail(e.target.value)}
+            onChange={e => handleChange('email', e.target.value, setEmail)}
+            onBlur={e => handleBlur('email', e.target.value)}
+            isInvalid={touched.email && errors.email}
+            isValid={touched.email && !errors.email && email}
           />
+          <Form.Control.Feedback type="invalid">
+            {errors.email}
+          </Form.Control.Feedback>
+          <Form.Control.Feedback type="valid">
+            Valid email format!
+          </Form.Control.Feedback>
         </Form.Group>
         <Form.Group className='mb-3' controlId='password'>
-          <Form.Label>Password</Form.Label>
+          <Form.Label>Password *</Form.Label>
           <InputGroup>
             <Form.Control
               type={showPassword ? 'text' : 'password'}
               value={password}
-              placeholder='Enter password'
-              onChange={e => setPassword(e.target.value)}
+              placeholder='Enter password (minimum 6 characters)'
+              onChange={e => handleChange('password', e.target.value, setPassword)}
+              onBlur={e => handleBlur('password', e.target.value)}
+              isInvalid={touched.password && errors.password}
+              isValid={touched.password && !errors.password && password.length >= 6}
             />
             <InputGroup.Text
               onClick={togglePasswordVisibility}
@@ -79,6 +158,12 @@ const LoginPage = () => {
             >
               {showPassword ? <FaEye /> : <FaEyeSlash />}
             </InputGroup.Text>
+            <Form.Control.Feedback type="invalid">
+              {errors.password}
+            </Form.Control.Feedback>
+            <Form.Control.Feedback type="valid">
+              Password length is valid!
+            </Form.Control.Feedback>
           </InputGroup>
         </Form.Group>
         <Row>

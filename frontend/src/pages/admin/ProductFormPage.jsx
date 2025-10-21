@@ -25,6 +25,10 @@ const ProductFormPage = () => {
   const [category, setCategory] = useState('');
   const [price, setPrice] = useState(0);
   const [countInStock, setCountInStock] = useState(0);
+  
+  // Frontend validation states
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const getProductQueryResult = useGetProductDetailsQuery(productId);
 
@@ -67,6 +71,95 @@ const ProductFormPage = () => {
     } catch (error) {
       toast.error(error?.data?.message || error.error);
     }
+  };
+
+  // Frontend validation functions
+  const validateField = (fieldName, value) => {
+    const newErrors = { ...errors };
+    
+    switch (fieldName) {
+      case 'name':
+        if (!value || value.trim().length < 2) {
+          newErrors.name = 'Product name must be at least 2 characters';
+        } else if (value.trim().length > 100) {
+          newErrors.name = 'Product name must be less than 100 characters';
+        } else {
+          delete newErrors.name;
+        }
+        break;
+      case 'brand':
+        if (!value || value.trim().length < 2) {
+          newErrors.brand = 'Brand must be at least 2 characters';
+        } else {
+          delete newErrors.brand;
+        }
+        break;
+      case 'category':
+        if (!value || value.trim().length < 2) {
+          newErrors.category = 'Category must be at least 2 characters';
+        } else {
+          delete newErrors.category;
+        }
+        break;
+      case 'description':
+        if (!value || value.trim().length < 10) {
+          newErrors.description = 'Description must be at least 10 characters';
+        } else {
+          delete newErrors.description;
+        }
+        break;
+      case 'price':
+        if (!value || value <= 0) {
+          newErrors.price = 'Price must be greater than 0';
+        } else {
+          delete newErrors.price;
+        }
+        break;
+      case 'countInStock':
+        if (value < 0) {
+          newErrors.countInStock = 'Stock count cannot be negative';
+        } else {
+          delete newErrors.countInStock;
+        }
+        break;
+      default:
+        break;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleBlur = (fieldName, value) => {
+    setTouched({ ...touched, [fieldName]: true });
+    validateField(fieldName, value);
+  };
+
+  const handleChange = (fieldName, value, setter) => {
+    setter(value);
+    if (touched[fieldName]) {
+      validateField(fieldName, value);
+    }
+  };
+
+  const validateForm = () => {
+    const isNameValid = validateField('name', name);
+    const isBrandValid = validateField('brand', brand);
+    const isCategoryValid = validateField('category', category);
+    const isDescriptionValid = validateField('description', description);
+    const isPriceValid = validateField('price', price);
+    const isStockValid = validateField('countInStock', countInStock);
+    
+    setTouched({
+      name: true,
+      brand: true,
+      category: true,
+      description: true,
+      price: true,
+      countInStock: true
+    });
+    
+    return isNameValid && isBrandValid && isCategoryValid && isDescriptionValid && isPriceValid && isStockValid;
   };
 
   const submitHandler = async e => {
