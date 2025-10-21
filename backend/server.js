@@ -30,6 +30,8 @@ const app = express();
 
 // Restrictive CORS: only for API routes and allowed origins
 const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
   process.env.CLIENT_URL || process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
   'https://accounts.google.com', // allow Google OAuth redirects
   'https://oauth2.googleapis.com' // optional: for token exchanges
@@ -118,8 +120,6 @@ const loginLimiter = rateLimit({
 // Apply rate limiting
 app.use('/api/', limiter);
 app.use('/api/v1/users/login', loginLimiter);
-
-app.use(cors());
 
 app.use(compression());
 app.use(cookieParser());

@@ -18,8 +18,14 @@ const protect = async (req, res, next) => {
       throw new Error('Authentication failed: Invalid token.');
     }
 
-    req.user = await User.findById(decodedToken.userId).select('-password');
+    const user = await User.findById(decodedToken.userId).select('-password');
+    
+    if (!user) {
+      res.statusCode = 401;
+      throw new Error('Authentication failed: User not found.');
+    }
 
+    req.user = user;
     next();
   } catch (error) {
     next(error);
